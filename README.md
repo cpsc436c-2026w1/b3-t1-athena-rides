@@ -95,8 +95,8 @@ called metadata tables.
 
 Parquet stores each column separately, and Athena reads only the columns it needs: projection pushdown. Here that is
 one column. The filter keeps all of March 2024's partition, so the manifests settle it and `pickup_datetime` is never
-read; only `base_passenger_fare` is (38 MB). Leave out 1 March and Athena must read `pickup_datetime` too, to check each
-row: 97 MB. The Iceberg partition in the manifests decides which files are opened; the columns decide how much of each
+read. Only `base_passenger_fare` is (38 MB). Leave out 1 March and Athena must read `pickup_datetime` too, to check each
+row: 97 MB. The Iceberg partition in the manifests decides which files are opened, and the columns decide how much of each
 file is read.
 </details>
 
