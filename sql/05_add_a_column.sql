@@ -5,7 +5,7 @@ ALTER TABLE tutorial.rides_march ADD COLUMNS (trip_flag string);
 UPDATE tutorial.rides_march SET trip_flag = 'zero_miles' WHERE trip_miles = 0;
 
 SELECT trip_flag, count(*) FROM tutorial.rides_march GROUP BY trip_flag;
--- zero_miles 3026 (2954 in March plus 72 on 1 April), the rest NULL
+-- zero_miles for the trips with no miles, NULL for the rest
 
 -- Rerun Step 3's snapshots query and paste the oldest row's snapshot_id (the first append)
 SELECT trip_flag, count(*) FROM tutorial.rides_march

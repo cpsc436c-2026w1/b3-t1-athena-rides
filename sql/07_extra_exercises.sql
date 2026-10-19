@@ -1,10 +1,10 @@
 -- Extra exercises (after the tutorial, or if you finish early).
 
 -- A. Delete the zero-mile trips and look back
-SELECT count(*) FROM tutorial.rides_march WHERE trip_miles = 0;          -- 3026
+SELECT count(*) FROM tutorial.rides_march WHERE trip_miles = 0;          -- note the number
 DELETE FROM tutorial.rides_march WHERE trip_miles = 0;
 SELECT count(*) FROM tutorial.rides_march WHERE trip_miles = 0;          -- 0
--- then count them FOR VERSION AS OF the snapshot just before the delete: 3026 again
+-- then count them FOR VERSION AS OF the snapshot just before the delete: the noted number is back
 
 -- B. Two writers at once: open a second query editor tab, prepare one statement in each, press Run in both
 --    within a second or two.

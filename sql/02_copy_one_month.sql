@@ -13,8 +13,8 @@ WHERE pickup_datetime >= TIMESTAMP '2024-03-01 00:00:00'
 -- takes about 10 seconds
 
 SELECT count(*) FROM tutorial.rides_march;
--- 21280788
+-- the same as March 2024's row count in step 1
 
 SELECT count(*) AS files, sum(record_count) AS rows
 FROM tutorial."rides_march$files";
--- 12 files
+-- several files: Athena wrote the copy in parts

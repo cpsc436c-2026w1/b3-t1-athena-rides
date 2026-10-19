@@ -8,9 +8,9 @@ your copy with a course table. These are L10's moves, done by you. They are also
 change; B3T2 does build and maintain.
 
 Time: about 8 minutes of setup (do it before the tutorial) and about 40 minutes of steps.
-Cost: the steps read about 5 GB in Athena, about 3 cents at $5.50 per TB.
+Cost: about 3 cents of Athena queries for the whole tutorial.
 
-> The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The numbers in this
+> The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The results in this
 > tutorial are for the table as it is.
 
 ## 1. Set up your account (once)
@@ -44,7 +44,7 @@ If the script stops with `STOP: ...`, send your account number (printed on the f
 TA.
 
 **What the Data scanned limit does.** A query that would read more than 2 GB is cancelled instead of running on. A
-cancelled query is still charged for what it read before it stopped (2 GB is about one cent).
+cancelled query is still charged for what it read before it stopped.
 
 ## 2. Open the query editor
 
@@ -69,7 +69,7 @@ change it from a student account. The tables used here are in the database `cour
 ## 3. The steps
 
 Each step has a file in [`sql/`](sql). Open the file here, copy one statement at a time into the query editor, run it,
-and compare with the result written under it in the file.
+and compare with what the comment under it says you should see.
 
 ### Step 1: predict, then query (about 7 minutes)
 
@@ -84,31 +84,28 @@ An Iceberg table also shows its metadata as read-only tables named `"<table>$<wh
 sums the files per partition, `$files` has one row per data file, `$snapshots` one row per snapshot. They are
 called metadata tables.
 
-1. Look up how big March 2024 is in `"rides$partitions"`. A month shows as the number of months since January 1970,
-   counted from 0: March 2024 is (2024 − 1970) × 12 + 3 − 1 = 650.
-2. Guess how much data the March query will read and write it down. Then run it and compare with **Data scanned**.
-   The answers are in the box below the steps.
-3. Run the same query without 1 March, after guessing whether it reads more or less.
-4. Run the two queries over all 36 months: the first runs, the second is cancelled by your Data scanned limit.
-5. Your turn: another month with a third column. Predict the data read before you run it.
+1. Look up March 2024 in `"rides$partitions"`: how many files hold it, and how many rows. A month shows as the
+   number of months since January 1970, counted from 0: March 2024 is (2024 − 1970) × 12 + 3 − 1 = 650.
+2. Before you run the March query, predict which part of the table Athena reads: the whole table, all of March 2024's
+   file, or only a small part of that file. Then run it and look at **Data scanned** under the results.
+3. Predict: without 1 March (2 to 31 March 2024), will the query read more or less than the March query? Run it.
+4. Predict which of the two queries over all 36 months your Data scanned limit stops. Run both.
+5. Your turn: July 2024 with a third column, `avg(trip_miles)`. More or less than the March query?
 
 <details>
 <summary>Check your predictions (open after you ran the queries)</summary>
 
-| Query | Data scanned |
-|---|---|
-| March 2024, trips and average fare | about 38 MB |
-| The same without 1 March (2 to 31 March 2024) | about 97 MB |
-| July 2024 with `avg(trip_miles)` | about 69 MB |
-| Average fare over all 36 months | about 1.3 GB, under the 2 GB limit |
+- **March 2024:** a small part of March's file. Parquet stores each column separately and Athena reads only the
+  columns it needs (projection pushdown). The filter keeps all of March 2024's partition, so the manifests settle it
+  and `pickup_datetime` is never read: only the fare column is.
+- **Without 1 March:** more. The filter now cuts the partition, so Athena must read `pickup_datetime` as well, to
+  check each row.
+- **All 36 months:** the one-column average runs. The query with three columns reads past your limit and is
+  cancelled.
+- **July 2024 with `avg(trip_miles)`:** more than March, because it reads one more column.
 
-Why March reads 38 MB, not March's 508 MB:
-
-Parquet stores each column separately, and Athena reads only the columns it needs: projection pushdown. Here that is
-one column. The filter keeps all of March 2024's partition, so the manifests settle it and `pickup_datetime` is never
-read. Only `base_passenger_fare` is (38 MB). Leave out 1 March and Athena must read `pickup_datetime` too, to check each
-row: 97 MB. The Iceberg partition in the manifests decides which files are opened, and the columns decide how much of each
-file is read.
+The Iceberg partition in the manifests decides which files are opened, and the columns decide how much of each file
+is read.
 </details>
 
 ### Step 2: copy one month into your own account (about 7 minutes)
@@ -118,15 +115,15 @@ file is read.
 `CREATE TABLE ... AS SELECT` (CTAS) writes a query's result as a new table, here an Iceberg table in your own catalog
 and bucket. Replace `<your-bucket>` with the bucket name from setup. Your copy is yours to change.
 
-You should see 21,280,788 rows.
+Your copy has as many rows as March 2024 in the course table (the row count from step 1).
 
 ### Step 3: change your copy, then look back (about 10 minutes)
 
 [`sql/03_change_and_time_travel.sql`](sql/03_change_and_time_travel.sql)
 
-This is L10's correction: some trips carry a negative fare. Count them (1,080), delete them from your copy, and list
-the copy's snapshots: an `append` (the CTAS) and an `overwrite` (the delete). Then read the copy as it was before the
-delete with `FOR VERSION AS OF`: time travel to an older snapshot.
+This is L10's correction: some trips carry a negative fare. Count them, delete them from your copy, and list
+the copy's snapshots: an `append` (the CTAS) and an `overwrite` (the delete). Count again: 0. Then read the copy as it was before the
+delete with `FOR VERSION AS OF` (time travel to an older snapshot): the count from before the delete is back.
 
 `FOR VERSION AS OF` takes a literal number: copy the snapshot id of the `append` from the snapshots query. A subquery
 there fails with `EXPRESSION_NOT_CONSTANT`.
@@ -136,8 +133,9 @@ there fails with `EXPRESSION_NOT_CONSTANT`.
 [`sql/04_load_the_same_day_twice.sql`](sql/04_load_the_same_day_twice.sql)
 
 A load job that runs twice by mistake (a retry, a rerun after a timeout) writes the same rows twice. Load 1 April
-2024 into your copy, then run the same `INSERT` again. The day now has 1,122,474 trips, twice the course table's
-561,237, and `$snapshots` ends with two appends of 561,237. Repair the copy: delete the day, then load it once.
+2024 into your copy, then run the same `INSERT` again. The day now has twice as many trips as in the course
+table, and `$snapshots` ends with two appends of the same size. Repair the copy: delete the day, then load it once;
+its count matches the course table again.
 
 <details>
 <summary>What would make the load itself safe to run twice?</summary>
@@ -150,7 +148,7 @@ the rows whose key matches and inserts the rest); or it remembers which input it
 
 [`sql/05_add_a_column.sql`](sql/05_add_a_column.sql)
 
-Tables gain columns over time. Add a flag column to your copy and fill it for trips with zero miles (3,026). Then read
+Tables gain columns over time. Add a flag column to your copy and fill it for trips with zero miles. Then read
 an old snapshot with the new column (rerun Step 3's snapshots query and take the oldest row's `snapshot_id`): it fails with `COLUMN_NOT_FOUND`, because an old snapshot is read with the
 columns the table had then.
 
@@ -161,8 +159,7 @@ load after a schema change names its columns, or adds the new one: `SELECT *, CA
 
 [`sql/06_join_with_a_course_table.sql`](sql/06_join_with_a_course_table.sql)
 
-One query can read your catalog and the course catalog together. You should see Manhattan first, with 8,253,468
-trips in March and an average fare of 28.64.
+One query can read your catalog and the course catalog together. Manhattan comes first.
 
 <details>
 <summary>Why did the course table still have the negative fares after your delete?</summary>
@@ -176,8 +173,8 @@ table by time travel to the snapshot before it.
 
 [`sql/07_extra_exercises.sql`](sql/07_extra_exercises.sql). Do them after Step 6: they use the column added in Step 5.
 
-**Delete the zero-mile trips and look back.** Count them (3,026), delete them, count again (0), then count them
-`FOR VERSION AS OF` the snapshot just before the delete (3,026 again).
+**Delete the zero-mile trips and look back.** Count them, delete them, count again (0), then count them
+`FOR VERSION AS OF` the snapshot just before the delete: the first count is back.
 
 **Two writers at once.** Open a second query editor tab. Prepare one statement in each tab, then press Run in both
 within a second or two.
@@ -200,7 +197,7 @@ a write.
 
 [`sql/99_clean_up.sql`](sql/99_clean_up.sql) drops your copy and the `tutorial` database. For an Iceberg table,
 `DROP TABLE` also deletes its data files. Delete the `athena-results/` folder in your bucket if you no longer need old
-results. Athena bills only for queries, so nothing keeps billing after the tutorial except the few MB left in your
+results. Athena bills only for queries, so nothing keeps billing after the tutorial except the small files left in your
 bucket.
 
 ## When something fails

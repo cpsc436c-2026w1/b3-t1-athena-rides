@@ -2,7 +2,7 @@
 
 SELECT count(*) FROM tutorial.rides_march
 WHERE base_passenger_fare < 0;
--- 1080
+-- note the number
 
 DELETE FROM tutorial.rides_march WHERE base_passenger_fare < 0;
 
@@ -19,7 +19,7 @@ WHERE base_passenger_fare < 0;
 SELECT count(*) FROM tutorial.rides_march
 FOR VERSION AS OF <snapshot_id of the append>
 WHERE base_passenger_fare < 0;
--- 1080 again
+-- the number you noted before the delete
 
 -- The same by time: any time between the two snapshots' committed_at values
 -- SELECT count(*) FROM tutorial.rides_march FOR TIMESTAMP AS OF TIMESTAMP '<time>' WHERE base_passenger_fare < 0;
