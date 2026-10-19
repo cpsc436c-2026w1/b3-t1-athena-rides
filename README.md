@@ -1,19 +1,19 @@
 # B3T1: Lakehouse/Athena+Glue
 
-This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides dataset
-from a serverless distributed query engine (AWS Athena) and will learn to copy some subset into your own AWS account.
+This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides dataset (but still similar to taxi rides)
+from a serverless distributed query engine (Amazon Athena) and will learn to copy some subset into your own AWS account.
 
-You will also practice some lakehouse maintenance and features we lacked in a more simple data lake: deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error,
-adding a new column, and joining your copy with a table from a course lakehouse.
+You will try some features we had on data lake with spark with the new engine (adding a column, joining across different sources) and see how lakehouse features can help us to solve simple data lake limitations (deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error).
 
-This will prepare you for Assignment 3, and will help you to understand better pros and cons of lakehouse vs lake structure.
-The next tutorial (B3T2) will cover more lake modification operations. 
+This will prepare you for Assignment 3 (which will use different data -- we are *not* a course about taxis after all), and will help you to understand better pros and cons of lakehouse vs lake structure.
+The next tutorial (B3T2) will cover more lakehouse maintenance operations -- we will use Spark/Glue to make our lakehouse more efficient. 
 
-In L11 we will *redesign* the table we use here in the original format to improve its layout, but in this tutorial we use it as is.
+In L11 we will *redesign* our data to improve table layout, but in this tutorial we use it as is.
 
-Our setup caps Athena Data scanned limit to keep the total costs under a few cents. I suggest exploring the annotated setup script on your own, some settings (e.g. imposing caps and checks like our Data scanned limit) are good practices to bear in mind for your own setup.
+In our setup I cap every query using Data scanned limit, that should keep the total costs of the queries from the tutorial under a few cents in total. 
+I suggest exploring the annotated setup script on your own, some settings (e.g. imposing caps and checks like our Data scanned limit) are good practices to bear in mind for your own setup.
 
-We do this part of operations in Athena and Glue (serverless/managed services) vs Trino and Spark on EMR cluster for simplicity, but in the lectures we will discuss when would we switch to using Spark and Glue on a cluster.
+We do this part of operations in Athena and Glue (serverless/managed services) vs Trino and Spark on EMR cluster for simplicity, but in the lectures we will discuss when would we switch to using Spark and Trino on a cluster.
 
 All course tutorials are listed on the [Tutorials page](https://cpsc436c-2026w1.github.io/lecture-reviews/tutorials.html).
 
