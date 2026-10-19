@@ -1,7 +1,7 @@
 # B3T1: Lakehouse/Athena+Glue
 
-This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides
-from a serverless distribbuted query engine (AWS Athena) and will learn to copy some subset into your own AWS account.
+This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides dataset
+from a serverless distributed query engine (AWS Athena) and will learn to copy some subset into your own AWS account.
 
 You will also practice some lakehouse maintenance and features we lacked in a more simple data lake: deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error,
 adding a new column, and joining your copy with a table from a course lakehouse.
