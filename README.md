@@ -1,15 +1,19 @@
 # B3T1: Lakehouse/Athena+Glue
 
-In this tutorial you query the course's New York rides table in Athena and copy March 2024 into your own AWS account.
-You then change your copy: you delete rows, read the table as it was before the delete, repair a load that ran twice,
-add a column, and join your copy with a course table. These are the moves from L10, done by you. In A3 terms they are
-the use and change tasks; B3T2 covers build and maintain.
+This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides
+from a serverless distribbuted query engine (AWS Athena) and will learn to copy some subset into your own AWS account.
 
-Allow about 8 minutes for setup before the tutorial and about 40 minutes for the tutorial itself. All the Athena
-queries together cost a few cents.
+You will also practice some lakehouse maintenance and features we lacked in a more simple data lake: deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error,
+adding a new column, and joining your copy with a table from a course lakehouse.
 
-> The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The results in this tutorial are
-> for the table as it is.
+This will prepare you for Assignment 3, and will help you to understand better pros and cons of lakehouse vs lake structure.
+The next tutorial (B3T2) will cover more lake modification operations. 
+
+In L11 we will *redesign* the table we use here in the original format to improve its layout, but in this tutorial we use it as is.
+
+Our setup caps Athena Data scanned limit to keep the total costs under a few cents. I suggest exploring the annotated setup script on your own, some settings (e.g. imposing caps and checks like our Data scanned limit) are good practices to bear in mind for your own setup.
+
+We do this part of operations in Athena and Glue (serverless/managed services) vs Trino and Spark on EMR cluster for simplicity, but in the lectures we will discuss when would we switch to using Spark and Glue on a cluster.
 
 All course tutorials are listed on the [Tutorials page](https://cpsc436c-2026w1.github.io/lecture-reviews/tutorials.html).
 
