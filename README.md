@@ -69,7 +69,7 @@ can change it from a student account. The tables used here are in the database `
 Each step links to a file in [`sql/`](sql). Open the file in a second browser tab, copy one statement at a time into
 Athena's query editor, run it, and read the comment under the statement: it says what you should see.
 
-### Step 1: predict, then query (about 7 minutes)
+### Step 1: predict, then query
 
 [`sql/01_predict_and_query.sql`](sql/01_predict_and_query.sql)
 
@@ -110,7 +110,7 @@ The Iceberg partition in the manifests decides which files are opened, and the c
 is read.
 </details>
 
-### Step 2: copy one month into your own account (about 7 minutes)
+### Step 2: copy one month into your own account
 
 [`sql/02_copy_one_month.sql`](sql/02_copy_one_month.sql)
 
@@ -119,7 +119,7 @@ and bucket. Replace `<your-bucket>` with the bucket name from setup. The copy is
 
 Your copy should have as many rows as March 2024 has in the course table, the row count you noted in Step 1.
 
-### Step 3: change your copy, then look back (about 10 minutes)
+### Step 3: change your copy, then look back
 
 [`sql/03_change_and_time_travel.sql`](sql/03_change_and_time_travel.sql)
 
@@ -133,7 +133,7 @@ the delete (time travel). The count should match the number you noted at the sta
 `FOR VERSION AS OF` needs the snapshot id as a number: paste it into the query. Athena rejects a subquery there with
 `EXPRESSION_NOT_CONSTANT`.
 
-### Step 4: load the same day twice, then repair (about 5 minutes)
+### Step 4: load the same day twice, then repair
 
 [`sql/04_load_the_same_day_twice.sql`](sql/04_load_the_same_day_twice.sql)
 
@@ -151,7 +151,7 @@ The job deletes the day before it writes it, in the same run. Or it uses `MERGE`
 the rows whose key matches and inserts the rest. Or it remembers which input it already loaded.
 </details>
 
-### Step 5: add a column (about 4 minutes)
+### Step 5: add a column
 
 [`sql/05_add_a_column.sql`](sql/05_add_a_column.sql)
 
@@ -164,7 +164,7 @@ The file then tries to load another day with `SELECT *`. Athena rejects it with 
 has one column more than the course table. The next statement loads the same day and supplies `NULL` for the new
 column, and it succeeds. The check after it should show that none of the rows it loaded has a flag.
 
-### Step 6: join your copy with a course table (about 5 minutes)
+### Step 6: join your copy with a course table
 
 [`sql/06_join_with_a_course_table.sql`](sql/06_join_with_a_course_table.sql)
 

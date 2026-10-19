@@ -11,7 +11,6 @@ WITH (table_type = 'ICEBERG',
 AS SELECT * FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-03-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00';
--- Takes about 10 seconds.
 
 SELECT count(*) FROM tutorial.rides_march;
 -- The same as the March 2024 row count you noted in Step 1.
