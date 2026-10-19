@@ -1,108 +1,104 @@
 # B3T1: Lakehouse/Athena+Glue
 
-New York rides in Athena.
+In this tutorial you query the course's New York rides table in Athena and copy March 2024 into your own AWS account.
+You then change your copy: you delete rows, read the table as it was before the delete, repair a load that ran twice,
+add a column, and join your copy with a course table. These are the moves from L10, done by you. In A3 terms they are
+the use and change tasks; B3T2 covers build and maintain.
 
-In this tutorial you query the course's rides table in Athena, then copy one month into your own account and change
-it: delete rows, look back at the table before the change, load a day twice and repair it, add a column, and join
-your copy with a course table. These are L10's moves, done by you. They are also two of A3's four task types, use and
-change; B3T2 does build and maintain.
+Allow about 8 minutes for setup before the tutorial and about 40 minutes for the tutorial itself. All the Athena
+queries together cost a few cents.
 
-Time: about 8 minutes of setup (do it before the tutorial) and about 40 minutes of steps.
-Cost: about 3 cents of Athena queries for the whole tutorial.
-
-> The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The results in this
-> tutorial are for the table as it is.
+> The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The results in this tutorial are
+> for the table as it is.
 
 ## 1. Set up your account (once)
 
-This creates a bucket for your query results and copies, sets a Data scanned limit of 2 GB on your Athena workgroup,
-and adds the course catalog as a data source named `course`.
+The setup script creates a bucket for your query results and your copies, sets a Data scanned limit of 2 GB on your
+Athena workgroup, and adds the course catalog as a data source named `course`.
 
 1. Sign in to your AWS sandbox and check that the Region at the top right is **Canada (Central)**. The course tables
    live there, and Athena only sees the catalogs of the Region it runs in.
-2. Open **CloudShell**: the `>_` icon in the top bar. A terminal opens at the bottom of the page.
+2. Open **CloudShell** with the `>_` icon in the top bar. A terminal opens at the bottom of the page.
 3. Paste this line and press Enter:
 
    ```
    curl -fsSO https://raw.githubusercontent.com/cpsc436c-2026w1/b3-t1-athena-rides/main/setup_athena.sh && bash setup_athena.sh
    ```
 
-You should see:
+The script prints one line for each thing it set up (the bucket, the workgroup, the `course` data source) and a line
+saying it could read course data. Its last line gives your bucket name, which looks like
+`436c-athena-<your account number>`. Write it down: you need it in Step 2. You can safely rerun the script.
+[`setup_athena.sh`](setup_athena.sh) is in this repository if you want to read it first.
 
-```
-bucket  s3://436c-athena-<your account number> created
-workgroup  primary: results in s3://436c-athena-<your account number>/athena-results/, Data scanned limit 2 GB
-data source  course added
-check  course data readable (265 taxi zones)
-Done. Your bucket for step 2 is: 436c-athena-<your account number>
-```
+If the script stops with a line starting `STOP:`, send that line and your account number (printed on the first line)
+to your TA.
 
-Write down the bucket name: Step 2 (copy one month) needs it. Rerunning the script is safe.
-[`setup_athena.sh`](setup_athena.sh) is in this repository if you want to read what it does first.
-
-If the script stops with `STOP: ...`, send your account number (printed on the first line) and the STOP line to your
-TA.
-
-**What the Data scanned limit does.** A query that would read more than 2 GB is cancelled instead of running on. A
-cancelled query is still charged for what it read before it stopped.
+**What the Data scanned limit does.** A query that would read more than the limit is cancelled instead of running on.
+Athena still charges for what the query read before it stopped.
 
 ## 2. Open the query editor
 
 1. In the AWS console, open **Athena**, then **Query editor**.
-2. Check that **Workgroup** (top right of the editor) is `primary`: the setup set the Data scanned limit and the
-   result location there.
-3. In the **Data source** list on the left, choose `course` to browse the course tables. **From Step 2 on, set Data
-   source back to `AwsDataCatalog`**: your own `tutorial` database lives there, and the SQL files name it without a
-   catalog. Course tables are always named in full (`course.course_rides.rides`), so they work with either setting.
-4. Run one statement at a time: paste it, or select it in the editor, then press **Run**. Under the results, **Data
-   scanned** shows what Athena reads, and bills.
+2. Check that **Workgroup**, at the top right of the editor, is `primary`. The setup put the Data scanned limit and the
+   result location on that workgroup.
+3. In the **Data source** list on the left, choose `course` for Step 1, and the `course_rides` database appears. Before
+   you run the first statement of Step 2, change **Data source** to `AwsDataCatalog`: your `tutorial` database is
+   created there. The SQL files always name course tables in full (`course.course_rides.rides`), so they keep working
+   after you change the data source.
+4. Run one statement at a time. Paste it into the editor, or select it if the editor holds several statements, and
+   press **Run**. The results appear below the editor, next to **Data scanned**: how much data Athena read, which is
+   what Athena charges for.
 
-The course catalog belongs to the course account `940482406111`. Every account in the course can read it; nobody can
-change it from a student account. The tables used here are in the database `course_rides`:
+The course catalog belongs to the course account `940482406111`. Every account in the course can read it, and nobody
+can change it from a student account. The tables used here are in the database `course_rides`:
 
 | Table | What is in it |
 |---|---|
-| `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime` |
-| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them. Not used here; a query on it opens every file |
-| `zones` | The 265 taxi zones |
+| `rides` | New York for-hire rides from January 2023 to December 2025, stored as an Iceberg table partitioned by the month of `pickup_datetime` |
+| `rides_flat` | The same rides as the original monthly Parquet files, with no table format over them. This tutorial does not use it |
+| `zones` | A lookup from taxi location ids to zone and borough names |
 
 ## 3. The steps
 
-Each step has a file in [`sql/`](sql). Open the file here, copy one statement at a time into the query editor, run it,
-and compare with what the comment under it says you should see.
+Each step links to a file in [`sql/`](sql). Open the file in a second browser tab, copy one statement at a time into
+Athena's query editor, run it, and read the comment under the statement: it says what you should see.
 
 ### Step 1: predict, then query (about 7 minutes)
 
 [`sql/01_predict_and_query.sql`](sql/01_predict_and_query.sql)
 
-Always filter `rides` on `pickup_datetime`. The table has an Iceberg partition per month of pickup, and each data
-file's month is kept in the table's manifests, so a filter on `pickup_datetime` lets Athena open only that month's
+Always filter `rides` on `pickup_datetime`. The table has an Iceberg partition for each month of pickup, and the
+table's manifests record each data file's month, so a filter on `pickup_datetime` lets Athena open only that month's
 files. (Manifests are Iceberg's metadata files that list the table's data files with each file's month and column
 statistics, L10.)
 
-An Iceberg table also shows its metadata as read-only tables named `"<table>$<what>"`, in double quotes: `$partitions`
-sums the files per partition, `$files` has one row per data file, `$snapshots` one row per snapshot. They are
-called metadata tables.
+Athena also shows an Iceberg table's metadata as read-only tables. Their names have the form `"<table>$<metadata>"`
+and need the double quotes. `$partitions` summarizes each partition, `$files` has one row per data file, and
+`$snapshots` has one row per snapshot. These are called metadata tables.
 
-1. Look up March 2024 in `"rides$partitions"`: how many files hold it, and how many rows. A month shows as the
+1. Find March 2024 in `"rides$partitions"`. Note how many files hold it and how many rows it has. A month shows as the
    number of months since January 1970, counted from 0: March 2024 is (2024 − 1970) × 12 + 3 − 1 = 650.
-2. Before you run the March query, predict which part of the table Athena reads: the whole table, all of March 2024's
-   file, or only a small part of that file. Then run it and look at **Data scanned** under the results.
-3. Predict: without 1 March (2 to 31 March 2024), will the query read more or less than the March query? Run it.
-4. Predict which of the two queries over all 36 months your Data scanned limit stops. Run both.
-5. Your turn: July 2024 with a third column, `avg(trip_miles)`. More or less than the March query?
+2. Before you run the March query, decide what you expect Athena to read: the whole table, all of March 2024's file,
+   or only part of that file. Then run the query and look at **Data scanned** under the results.
+3. Change the query so that it starts on 2 March 2024 instead of 1 March 2024. Do you expect Athena to read more data
+   than for the March query, or less? Run it and compare.
+4. The next two queries have no date filter, so they cover all 36 months. Decide which one your Data scanned limit
+   will stop, then run both.
+5. Run the July 2024 query, and note **Data scanned**. Then run it again with `avg(trip_miles)` added. Do you expect
+   the second run to read more data than the first, or less?
 
 <details>
 <summary>Check your predictions (open after you ran the queries)</summary>
 
-- **March 2024:** a small part of March's file. Parquet stores each column separately and Athena reads only the
-  columns it needs (projection pushdown). The filter keeps all of March 2024's partition, so the manifests settle it
-  and `pickup_datetime` is never read: only the fare column is.
-- **Without 1 March:** more. The filter now cuts the partition, so Athena must read `pickup_datetime` as well, to
-  check each row.
-- **All 36 months:** the one-column average runs. The query with three columns reads past your limit and is
+- **March 2024:** only part of March's file. Parquet stores each column separately, and Athena reads only the
+  columns it needs (projection pushdown). The filter covers the whole March 2024 partition, so the manifests settle
+  it and Athena never reads `pickup_datetime`: it reads only the fare column.
+- **Starting on 2 March 2024:** more, even though there are fewer trips. The filter no longer covers the whole month,
+  so Athena has to read `pickup_datetime` as well, to check each row.
+- **All 36 months:** the query with one average runs. The query with three columns reads past your limit and is
   cancelled.
-- **July 2024 with `avg(trip_miles)`:** more than March, because it reads one more column.
+- **July 2024 with `avg(trip_miles)`:** more than the first July query, because it reads one more column from the
+  same files.
 
 The Iceberg partition in the manifests decides which files are opened, and the columns decide how much of each file
 is read.
@@ -113,56 +109,67 @@ is read.
 [`sql/02_copy_one_month.sql`](sql/02_copy_one_month.sql)
 
 `CREATE TABLE ... AS SELECT` (CTAS) writes a query's result as a new table, here an Iceberg table in your own catalog
-and bucket. Replace `<your-bucket>` with the bucket name from setup. Your copy is yours to change.
+and bucket. Replace `<your-bucket>` with the bucket name from setup. The copy is yours to change.
 
-Your copy has as many rows as March 2024 in the course table (the row count from step 1).
+Your copy should have as many rows as March 2024 has in the course table, the row count you noted in Step 1.
 
 ### Step 3: change your copy, then look back (about 10 minutes)
 
 [`sql/03_change_and_time_travel.sql`](sql/03_change_and_time_travel.sql)
 
-This is L10's correction: some trips carry a negative fare. Count them, delete them from your copy, and list
-the copy's snapshots: an `append` (the CTAS) and an `overwrite` (the delete). Count again: 0. Then read the copy as it was before the
-delete with `FOR VERSION AS OF` (time travel to an older snapshot): the count from before the delete is back.
+Some trips have a negative fare. Count them in your copy and note the number. Delete them, then count again: none
+should remain.
 
-`FOR VERSION AS OF` takes a literal number: copy the snapshot id of the `append` from the snapshots query. A subquery
-there fails with `EXPRESSION_NOT_CONSTANT`.
+Next, list your copy's snapshots. You should see an `append`, made by the CTAS, and an `overwrite`, made by the
+delete. Copy the `snapshot_id` of the `append` and use it with `FOR VERSION AS OF` to read the table as it was before
+the delete (time travel). The count should match the number you noted at the start.
+
+`FOR VERSION AS OF` needs the snapshot id as a number: paste it into the query. Athena rejects a subquery there with
+`EXPRESSION_NOT_CONSTANT`.
 
 ### Step 4: load the same day twice, then repair (about 5 minutes)
 
 [`sql/04_load_the_same_day_twice.sql`](sql/04_load_the_same_day_twice.sql)
 
-A load job that runs twice by mistake (a retry, a rerun after a timeout) writes the same rows twice. Load 1 April
-2024 into your copy, then run the same `INSERT` again. The day now has twice as many trips as in the course
-table, and `$snapshots` ends with two appends of the same size. Repair the copy: delete the day, then load it once;
-its count matches the course table again.
+A load job can write the same rows twice when someone reruns it by mistake or retries it after a timeout. Run the
+`INSERT` for 1 April 2024 twice, then run the comparison query: your copy should have twice as many trips for that
+day as the course table. In `$snapshots`, the last two appends should show the same `added` value.
+
+Repair your copy: delete 1 April 2024 and run the `INSERT` once. Run the comparison query again: the two counts should
+now match.
 
 <details>
 <summary>What would make the load itself safe to run twice?</summary>
 
-The job deletes the day before it writes it, in the same run; or it uses `MERGE` on a key (one statement that updates
-the rows whose key matches and inserts the rest); or it remembers which input it already loaded.
+The job deletes the day before it writes it, in the same run. Or it uses `MERGE` on a key: one statement that updates
+the rows whose key matches and inserts the rest. Or it remembers which input it already loaded.
 </details>
 
 ### Step 5: add a column (about 4 minutes)
 
 [`sql/05_add_a_column.sql`](sql/05_add_a_column.sql)
 
-Tables gain columns over time. Add a flag column to your copy and fill it for trips with zero miles. Then read
-an old snapshot with the new column (rerun Step 3's snapshots query and take the oldest row's `snapshot_id`): it fails with `COLUMN_NOT_FOUND`, because an old snapshot is read with the
-columns the table had then.
+Tables gain columns over time. Add a flag column to your copy and fill it for the trips with zero miles. Then read an
+old snapshot with the new column: rerun Step 3's snapshots query, take the oldest row's `snapshot_id`, and run the
+time-travel query. Athena rejects it with `COLUMN_NOT_FOUND`, because an old snapshot is read with the columns the
+table had then.
 
-A `SELECT *` load from the course table now fails with `TYPE_MISMATCH`, because your copy has one column more. A
-load after a schema change names its columns, or adds the new one: `SELECT *, CAST(NULL AS varchar) FROM ...`.
+The file then tries to load another day with `SELECT *`. Athena rejects it with `TYPE_MISMATCH`, because your copy now
+has one column more than the course table. The next statement loads the same day and supplies `NULL` for the new
+column, and it succeeds. The check after it should show that none of the rows it loaded has a flag.
 
 ### Step 6: join your copy with a course table (about 5 minutes)
 
 [`sql/06_join_with_a_course_table.sql`](sql/06_join_with_a_course_table.sql)
 
-One query can read your catalog and the course catalog together. Manhattan comes first.
+The join reads your table from `AwsDataCatalog` and the zones table from the `course` catalog. The result is sorted by
+the number of trips, and Manhattan should come first.
+
+Then run the query on the course table below the join. Its count should match the number of negative fares you noted
+in Step 3, before you changed your copy.
 
 <details>
-<summary>Why did the course table still have the negative fares after your delete?</summary>
+<summary>Why does the course table still have the negative fares after your delete?</summary>
 
 Your delete changed your copy, a separate table with its own snapshots. The course table is read-only. If the course
 team corrected the course table, the delete would add a snapshot there, and a query could still read the uncorrected
@@ -171,20 +178,22 @@ table by time travel to the snapshot before it.
 
 ## 4. Extra exercises
 
-[`sql/07_extra_exercises.sql`](sql/07_extra_exercises.sql). Do them after Step 6: they use the column added in Step 5.
+[`sql/07_extra_exercises.sql`](sql/07_extra_exercises.sql). Do them after Step 6, because they use the column added in
+Step 5.
 
-**Delete the zero-mile trips and look back.** Count them, delete them, count again (0), then count them
-`FOR VERSION AS OF` the snapshot just before the delete: the first count is back.
+**Delete the zero-mile trips and look back.** Count the zero-mile trips and note the number. Delete them, then count
+again: none should remain. Then count them `FOR VERSION AS OF` the snapshot just before the delete: the count should
+match the number you noted.
 
-**Two writers at once.** Open a second query editor tab. Prepare one statement in each tab, then press Run in both
-within a second or two.
+**Run two writes at about the same time.** Open a second query editor tab. Put one statement in each tab and start
+them as close together as you can.
 
-- First try, two loads of different days: both succeed, and `$snapshots` shows two appends.
-- Second try, two corrections (two `DELETE`s): one succeeds, the other fails with `ICEBERG_COMMIT_ERROR`. Run the
-  failed one again and it succeeds.
+- Start with the two loads of different days. Both should succeed, and `$snapshots` should show an append for each.
+- Then run the two `DELETE` statements. If they overlap, Athena rejects one of them with `ICEBERG_COMMIT_ERROR`. Run
+  the rejected one again and it succeeds. If both succeed, Athena ran them one after the other: try again.
 
 <details>
-<summary>Why the difference?</summary>
+<summary>Why can two loads both succeed while two deletes conflict?</summary>
 
 Each write prepares a new snapshot, then tries to make it the table's current one. If another write got there first,
 Iceberg checks whether the two touch the same data. Two appends add different files, so the second is placed after
@@ -195,10 +204,10 @@ a write.
 
 ## 5. Clean up
 
-[`sql/99_clean_up.sql`](sql/99_clean_up.sql) drops your copy and the `tutorial` database. For an Iceberg table,
-`DROP TABLE` also deletes its data files. Delete the `athena-results/` folder in your bucket if you no longer need old
-results. Athena bills only for queries, so nothing keeps billing after the tutorial except the small files left in your
-bucket.
+Open [`sql/99_clean_up.sql`](sql/99_clean_up.sql) and run its two statements. Refresh the `AwsDataCatalog` list: the
+`tutorial` database should be gone. For an Iceberg table, `DROP TABLE` also deletes its data files. If you no longer
+need your old query results, delete the `athena-results/` folder in your bucket. Athena charges only for queries, so
+after the tutorial nothing keeps charging except the small files left in your bucket.
 
 ## When something fails
 
@@ -206,14 +215,14 @@ bucket.
 |---|---|---|
 | Asked for a query result location, or "No output location provided" | Setup did not run, or ran in another Region | Rerun `setup_athena.sh` in Canada (Central) |
 | `SCHEMA_NOT_FOUND` for `tutorial` (Step 2 onwards) | The **Data source** list is on `course` | Choose `AwsDataCatalog` |
-| `TABLE_NOT_FOUND` or `SCHEMA_NOT_FOUND` on a course table | Region is not Canada (Central), or the `course` data source is missing | Switch the Region; rerun the setup script |
+| `TABLE_NOT_FOUND` or `SCHEMA_NOT_FOUND` on a course table | The Region is not Canada (Central), or the `course` data source is missing | Switch the Region, or rerun the setup script |
 | Your `tutorial` database is not in the list | The **Data source** list is on `course` | Choose `AwsDataCatalog` |
-| "Bytes scanned limit was exceeded" | The query reads more than 2 GB, usually `rides` without a `pickup_datetime` filter | Add a month filter |
+| "Bytes scanned limit was exceeded" | The query reads more than your limit, usually `rides` without a `pickup_datetime` filter | Add a month filter |
 | `EXPRESSION_NOT_CONSTANT` | A subquery after `FOR VERSION AS OF` | Paste the snapshot id as a number |
-| `COLUMN_NOT_FOUND` on a time-travel query | The column was added after that snapshot | Expected: old snapshots keep their old columns |
+| `COLUMN_NOT_FOUND` on a time-travel query | The snapshot is older than the column | This is expected in Step 5. To read the column, use a snapshot made after you added it |
 | `TYPE_MISMATCH` on `INSERT ... SELECT *` | Your copy has a column the course table lacks | Name the columns, or add `CAST(NULL AS varchar)` |
 | `ICEBERG_COMMIT_ERROR` | Another change to the same table committed first | Run the statement again |
-| CTAS fails: location not empty, or table already exists | Second run of the same CTAS | `DROP TABLE tutorial.rides_march` first, or use a new location |
+| CTAS fails because the location is not empty or the table already exists | The same CTAS ran a second time | `DROP TABLE tutorial.rides_march` first, or use a new location |
 | Error when changing a course table | Course tables are read-only for student accounts | Change your copy |
 
 ## Files
@@ -221,4 +230,4 @@ bucket.
 | File | What it is |
 |---|---|
 | [`setup_athena.sh`](setup_athena.sh) | One-time setup: bucket, workgroup result location and Data scanned limit, the `course` data source, a check query |
-| [`sql/`](sql) | One file per step, in order, with the expected result under each statement |
+| [`sql/`](sql) | One file per step, in order, with what you should see under each statement |

@@ -1,5 +1,6 @@
--- Step 2: copy one month into your own account (CTAS).
--- Replace <your-bucket> with your bucket's name (setup_athena.sh printed it).
+-- Step 2: copy March 2024 into an Iceberg table in your own account.
+-- First change Data source (left of the editor) to AwsDataCatalog.
+-- Replace <your-bucket> with the bucket name that setup_athena.sh printed.
 
 CREATE DATABASE IF NOT EXISTS tutorial;
 
@@ -10,11 +11,11 @@ WITH (table_type = 'ICEBERG',
 AS SELECT * FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-03-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00';
--- takes about 10 seconds
+-- Takes about 10 seconds.
 
 SELECT count(*) FROM tutorial.rides_march;
--- the same as March 2024's row count in step 1
+-- The same as the March 2024 row count you noted in Step 1.
 
 SELECT count(*) AS files, sum(record_count) AS rows
 FROM tutorial."rides_march$files";
--- several files: Athena wrote the copy in parts
+-- The rows match the count above. Athena wrote the copy as several files.

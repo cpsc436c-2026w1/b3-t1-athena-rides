@@ -6,17 +6,24 @@ SELECT * FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-04-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-02 00:00:00';
 
-SELECT count(*) FROM tutorial.rides_march
+-- Compare the day in your copy with the day in the course table.
+SELECT 'your copy' AS source, count(*) AS trips
+FROM tutorial.rides_march
+WHERE pickup_datetime >= TIMESTAMP '2024-04-01 00:00:00'
+  AND pickup_datetime <  TIMESTAMP '2024-04-02 00:00:00'
+UNION ALL
+SELECT 'course table' AS source, count(*) AS trips
+FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-04-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-02 00:00:00';
--- twice the day's count in the course table
+-- Your copy has twice the course table's count.
 
 SELECT operation, summary['added-records'] AS added
 FROM tutorial."rides_march$snapshots"
 ORDER BY committed_at;
--- two appends of the same size at the end
+-- The last two appends show the same added value.
 
--- Repair: remove the day, then load it once
+-- Repair: remove the day, then load it once.
 DELETE FROM tutorial.rides_march
 WHERE pickup_datetime >= TIMESTAMP '2024-04-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-02 00:00:00';
@@ -25,4 +32,4 @@ INSERT INTO tutorial.rides_march
 SELECT * FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-04-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-02 00:00:00';
--- run the count again: it matches the course table
+-- Run the comparison query again: the two counts now match.

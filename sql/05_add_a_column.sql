@@ -5,14 +5,29 @@ ALTER TABLE tutorial.rides_march ADD COLUMNS (trip_flag string);
 UPDATE tutorial.rides_march SET trip_flag = 'zero_miles' WHERE trip_miles = 0;
 
 SELECT trip_flag, count(*) FROM tutorial.rides_march GROUP BY trip_flag;
--- zero_miles for the trips with no miles, NULL for the rest
+-- zero_miles for the trips with no miles, NULL for all the others.
 
--- Rerun Step 3's snapshots query and paste the oldest row's snapshot_id (the first append)
+-- Rerun Step 3's snapshots query and paste the oldest row's snapshot_id here.
 SELECT trip_flag, count(*) FROM tutorial.rides_march
 FOR VERSION AS OF <snapshot_id of the first append>
 GROUP BY trip_flag;
--- fails with COLUMN_NOT_FOUND: an old snapshot is read with the columns the table had then
+-- Athena rejects it with COLUMN_NOT_FOUND: an old snapshot is read with the columns the table had then.
 
--- A SELECT * load from the course table now fails with TYPE_MISMATCH (your copy has one column more).
--- A load after a schema change names its columns, or adds the new one:
---   INSERT INTO tutorial.rides_march SELECT *, CAST(NULL AS varchar) FROM course.course_rides.rides WHERE ...
+-- A load with SELECT * from the course table. Your copy has one column more now.
+INSERT INTO tutorial.rides_march
+SELECT * FROM course.course_rides.rides
+WHERE pickup_datetime >= TIMESTAMP '2024-04-05 00:00:00'
+  AND pickup_datetime <  TIMESTAMP '2024-04-06 00:00:00';
+-- Athena rejects it with TYPE_MISMATCH.
+
+-- The same load, supplying NULL for the new column.
+INSERT INTO tutorial.rides_march
+SELECT *, CAST(NULL AS varchar) FROM course.course_rides.rides
+WHERE pickup_datetime >= TIMESTAMP '2024-04-05 00:00:00'
+  AND pickup_datetime <  TIMESTAMP '2024-04-06 00:00:00';
+
+SELECT count(*) AS loaded_rows, count_if(trip_flag IS NULL) AS rows_without_flag
+FROM tutorial.rides_march
+WHERE pickup_datetime >= TIMESTAMP '2024-04-05 00:00:00'
+  AND pickup_datetime <  TIMESTAMP '2024-04-06 00:00:00';
+-- The two numbers match: none of the loaded rows has a flag.
