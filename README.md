@@ -62,8 +62,8 @@ change it from a student account. The tables used here are in the database `cour
 
 | Table | What is in it |
 |---|---|
-| `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime`, 20.6 GB |
-| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them. Not used here; a query on it opens every file |
+| `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime`, 17.4 GB of Parquet |
+| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them (20.6 GB). Not used here; a query on it opens every file |
 | `zones` | The 265 taxi zones |
 
 ## 3. The steps
