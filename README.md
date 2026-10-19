@@ -1,9 +1,11 @@
-# Block 3, tutorial 1: New York rides in Athena
+# B3T1: Lakehouse/Athena+Glue
+
+New York rides in Athena.
 
 In this tutorial you query the course's rides table in Athena, then copy one month into your own account and change
 it: delete rows, look back at the table before the change, load a day twice and repair it, add a column, and join
 your copy with a course table. These are L10's moves, done by you. They are also two of A3's four task types, use and
-change; tutorial 2 does build and maintain.
+change; B3T2 does build and maintain.
 
 Time: about 8 minutes of setup (do it before the tutorial) and about 40 minutes of steps.
 Cost: the steps read about 5 GB in Athena, about 3 cents at $5.50 per TB.

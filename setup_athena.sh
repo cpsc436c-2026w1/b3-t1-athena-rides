@@ -1,5 +1,5 @@
 #!/bin/bash
-# Block 3, tutorial 1: set up Athena in your sandbox account (run once, in CloudShell, Region Canada (Central)).
+# B3T1: set up Athena in your sandbox account (run once, in CloudShell, Region Canada (Central)).
 # What it does, in order:
 #   1. creates a bucket 436c-athena-<your account number> for query results and your copies (skipped if it exists)
 #   2. sets the primary workgroup's query result location to that bucket and its Data scanned limit to 2 GB
