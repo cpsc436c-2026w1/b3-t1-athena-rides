@@ -3,7 +3,7 @@
 This tutorial follows our L10 and goes in parallel with L11: you will learn to query a course data lakehouse with a more recent New York rides dataset (but still similar to taxi rides)
 from a serverless distributed query engine (Amazon Athena) and will learn to copy some subset into your own AWS account.
 
-You will try some features we had on data lake with spark with the new engine (adding a column, joining across different sources) and see how lakehouse features can help us to solve simple data lake limitations (deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error).
+You will try some features we had on data lake with Spark with the new engine (adding a column, joining across different sources) and see how lakehouse features can help us to solve simple data lake limitations (deleting unnecessary rows, reading the table as it was before the delete, repairing an operation that ran twice by error).
 
 This will prepare you for Assignment 3 (which will use different data -- we are *not* a course about taxis after all), and will help you to understand better pros and cons of lakehouse vs lake structure.
 The next tutorial (B3T2) will cover more lakehouse maintenance operations -- we will use Spark/Glue to make our lakehouse more efficient. 
