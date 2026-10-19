@@ -7,13 +7,13 @@ UPDATE tutorial.rides_march SET trip_flag = 'zero_miles' WHERE trip_miles = 0;
 SELECT trip_flag, count(*) FROM tutorial.rides_march GROUP BY trip_flag;
 -- zero_miles for the trips with no miles, NULL for all the others.
 
--- Rerun Step 3's snapshots query and paste the oldest row's snapshot_id here.
+-- This query fails on purpose. Rerun Step 3's snapshots query and paste the oldest row's snapshot_id here.
 SELECT trip_flag, count(*) FROM tutorial.rides_march
 FOR VERSION AS OF <snapshot_id of the first append>
 GROUP BY trip_flag;
 -- Athena rejects it with COLUMN_NOT_FOUND: an old snapshot is read with the columns the table had then.
 
--- A load with SELECT * from the course table. Your copy has one column more now.
+-- This load fails on purpose: a SELECT * from the course table, while your copy has a column the course table lacks.
 INSERT INTO tutorial.rides_march
 SELECT * FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-04-05 00:00:00'

@@ -6,7 +6,13 @@ SELECT count(*) FROM tutorial.rides_march WHERE trip_miles = 0;
 DELETE FROM tutorial.rides_march WHERE trip_miles = 0;
 SELECT count(*) FROM tutorial.rides_march WHERE trip_miles = 0;
 -- 0: none remain.
--- Now count them FOR VERSION AS OF the snapshot just before the delete: the number you noted comes back.
+-- Find the snapshot just before the delete (the second newest row), then count the trips in it.
+SELECT snapshot_id, committed_at, operation FROM tutorial."rides_march$snapshots" ORDER BY committed_at DESC;
+
+SELECT count(*) FROM tutorial.rides_march
+FOR VERSION AS OF <snapshot_id just before the delete>
+WHERE trip_miles = 0;
+-- The number you noted comes back.
 
 -- B. Two writes at about the same time. Open a second query editor tab, put one statement in each tab,
 --    and start them as close together as you can.

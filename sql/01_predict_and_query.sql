@@ -5,7 +5,7 @@
 SELECT partition, record_count, file_count, total_size
 FROM course.course_rides."rides$partitions"
 WHERE partition.pickup_datetime_month = 650;
--- One file holds all of March 2024. Note its row count.
+-- Note how many files hold March 2024 and its row count before you continue.
 
 -- Before you run this: will Athena read the whole table, all of March's file, or only part of that file?
 SELECT count(*) AS trips, round(avg(base_passenger_fare), 2) AS avg_fare

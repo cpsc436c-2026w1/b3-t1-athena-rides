@@ -11,6 +11,8 @@ queries together cost a few cents.
 > The rides table here is the table as Athena wrote it. In L11 we redesign its layout. The results in this tutorial are
 > for the table as it is.
 
+All course tutorials are listed on the [Tutorials page](https://cpsc436c-2026w1.github.io/lecture-reviews/tutorials.html).
+
 ## 1. Set up your account (once)
 
 The setup script creates a bucket for your query results and your copies, sets a Data scanned limit of 2 GB on your
@@ -26,7 +28,7 @@ Athena workgroup, and adds the course catalog as a data source named `course`.
    ```
 
 The script prints one line for each thing it set up (the bucket, the workgroup, the `course` data source) and a line
-saying it could read course data. Its last line gives your bucket name, which looks like
+saying it could read course data. Near the end it gives your bucket name, which looks like
 `436c-athena-<your account number>`. Write it down: you need it in Step 2. You can safely rerun the script.
 [`setup_athena.sh`](setup_athena.sh) is in this repository if you want to read it first.
 
@@ -81,7 +83,7 @@ and need the double quotes. `$partitions` summarizes each partition, `$files` ha
 2. Before you run the March query, decide what you expect Athena to read: the whole table, all of March 2024's file,
    or only part of that file. Then run the query and look at **Data scanned** under the results.
 3. Change the query so that it starts on 2 March 2024 instead of 1 March 2024. Do you expect Athena to read more data
-   than for the March query, or less? Run it and compare.
+   than for the March 2024 query, or less? Run it and compare.
 4. The next two queries have no date filter, so they cover all 36 months. Decide which one your Data scanned limit
    will stop, then run both.
 5. Run the July 2024 query, and note **Data scanned**. Then run it again with `avg(trip_miles)` added. Do you expect
@@ -207,7 +209,8 @@ a write.
 Open [`sql/99_clean_up.sql`](sql/99_clean_up.sql) and run its two statements. Refresh the `AwsDataCatalog` list: the
 `tutorial` database should be gone. For an Iceberg table, `DROP TABLE` also deletes its data files. If you no longer
 need your old query results, delete the `athena-results/` folder in your bucket. Athena charges only for queries, so
-after the tutorial nothing keeps charging except the small files left in your bucket.
+after the tutorial nothing keeps charging except the small files left in your bucket. Keep the bucket, the `course`
+data source and the Data scanned limit: B3T2 and A3 use them.
 
 ## When something fails
 
