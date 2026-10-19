@@ -12,11 +12,18 @@ SELECT count(*) AS trips, round(avg(base_passenger_fare), 2) AS avg_fare
 FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-03-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00';
--- 21280788 trips, 25.55; reads about 38 MB
+-- 21280788 trips, 25.55. Compare Data scanned with your guess; the README's step 1 box explains it.
 
--- The Data scanned limit from setup: one column over all 36 months reads 1.3 GB and runs ...
+-- Now leave out 1 March. Guess first: more or less than the March query?
+SELECT count(*) AS trips, round(avg(base_passenger_fare), 2) AS avg_fare
+FROM course.course_rides.rides
+WHERE pickup_datetime >= TIMESTAMP '2024-03-02 00:00:00'
+  AND pickup_datetime <  TIMESTAMP '2024-04-01 00:00:00';
+-- 20519713 trips, 25.56. Check Data scanned against your guess (README, step 1 box).
+
+-- The Data scanned limit from setup: one column over all 36 months stays under 2 GB and runs ...
 SELECT round(avg(base_passenger_fare), 2) FROM course.course_rides.rides;
--- 25.94; reads about 1.3 GB (about $0.007)
+-- 25.94
 
 -- ... three columns over all months read past 2 GB and are cancelled ("Bytes scanned limit was exceeded")
 SELECT round(avg(base_passenger_fare), 2), round(sum(trip_miles)), count(DISTINCT dispatching_base_num)
@@ -28,4 +35,4 @@ SELECT count(*) AS trips, round(avg(base_passenger_fare), 2) AS avg_fare, round(
 FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-07-01 00:00:00'
   AND pickup_datetime <  TIMESTAMP '2024-08-01 00:00:00';
--- 19182934 trips, 25.65, 5.15; reads about 69 MB
+-- 19182934 trips, 25.65, 5.15. Check Data scanned against your guess (README, step 1 box).

@@ -62,8 +62,8 @@ change it from a student account. The tables used here are in the database `cour
 
 | Table | What is in it |
 |---|---|
-| `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime`, 17.4 GB of Parquet |
-| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them (20.6 GB). Not used here; a query on it opens every file |
+| `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime` |
+| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them. Not used here; a query on it opens every file |
 | `zones` | The 265 taxi zones |
 
 ## 3. The steps
@@ -87,11 +87,22 @@ called metadata tables.
 1. Look up how big March 2024 is in `"rides$partitions"`. A month shows as the number of months since January 1970,
    counted from 0: March 2024 is (2024 − 1970) × 12 + 3 − 1 = 650.
 2. Guess how much data the March query will read and write it down. Then run it and compare with **Data scanned**.
-3. Run the two queries over all 36 months: the first runs, the second is cancelled by your Data scanned limit.
-4. Your turn: another month with a third column. Predict the data read before you run it.
+   The answers are in the box below the steps.
+3. Run the same query without 1 March, after guessing whether it reads more or less.
+4. Run the two queries over all 36 months: the first runs, the second is cancelled by your Data scanned limit.
+5. Your turn: another month with a third column. Predict the data read before you run it.
 
 <details>
-<summary>Why does the March query read 38 MB, not March's 508 MB?</summary>
+<summary>Check your predictions (open after you ran the queries)</summary>
+
+| Query | Data scanned |
+|---|---|
+| March 2024, trips and average fare | about 38 MB |
+| The same without 1 March (2 to 31 March 2024) | about 97 MB |
+| July 2024 with `avg(trip_miles)` | about 69 MB |
+| Average fare over all 36 months | about 1.3 GB, under the 2 GB limit |
+
+Why March reads 38 MB, not March's 508 MB:
 
 Parquet stores each column separately, and Athena reads only the columns it needs: projection pushdown. Here that is
 one column. The filter keeps all of March 2024's partition, so the manifests settle it and `pickup_datetime` is never
@@ -107,8 +118,7 @@ file is read.
 `CREATE TABLE ... AS SELECT` (CTAS) writes a query's result as a new table, here an Iceberg table in your own catalog
 and bucket. Replace `<your-bucket>` with the bucket name from setup. Your copy is yours to change.
 
-You should see 21,280,788 rows in 12 data files. The course table keeps March in one file; Athena writes the copy
-with several writers in parallel, each writing its own files.
+You should see 21,280,788 rows.
 
 ### Step 3: change your copy, then look back (about 10 minutes)
 
