@@ -26,7 +26,8 @@ SELECT *, CAST(NULL AS varchar) FROM course.course_rides.rides
 WHERE pickup_datetime >= TIMESTAMP '2024-04-03 00:00:00' AND pickup_datetime < TIMESTAMP '2024-04-04 00:00:00';
 
 -- Then two deletes, one per tab. If they overlap, Athena rejects one with ICEBERG_COMMIT_ERROR:
--- run it again and it succeeds. If both succeed, Athena ran them one after the other: try again.
+-- run it again and it succeeds. If both succeed, Athena ran them one after the other: change the numbers in both
+-- conditions (for example tips > 40 and driver_pay < 1) and try again.
 DELETE FROM tutorial.rides_march WHERE tips > 50;
 
 DELETE FROM tutorial.rides_march WHERE driver_pay < 0;

@@ -196,7 +196,8 @@ them as close together as you can.
 
 - Start with the two loads of different days. Both should succeed, and `$snapshots` should show an append for each.
 - Then run the two `DELETE` statements. If they overlap, Athena rejects one of them with `ICEBERG_COMMIT_ERROR`. Run
-  the rejected one again and it succeeds. If both succeed, Athena ran them one after the other: try again.
+  the rejected one again and it succeeds. If both succeed, Athena ran them one after the other. To try again, change the numbers in both conditions (for
+  example `tips > 40` and `driver_pay < 1`), because the first try already deleted the rows that matched.
 
 <details>
 <summary>Why can two loads both succeed while two deletes conflict?</summary>

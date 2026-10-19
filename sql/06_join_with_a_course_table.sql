@@ -1,4 +1,4 @@
--- Step 6: one query reads your table and a course table together.
+-- Step 6: one query reads your table and a course table together. Keep Data source on AwsDataCatalog.
 
 SELECT z.borough, count(*) AS trips, round(avg(r.base_passenger_fare), 2) AS avg_fare
 FROM tutorial.rides_march r

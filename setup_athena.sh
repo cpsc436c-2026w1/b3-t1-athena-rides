@@ -20,6 +20,8 @@ ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
 BUCKET=436c-athena-$ACCOUNT
 
 echo "Account $ACCOUNT, region $REGION"
+# If any AWS call below fails, print a STOP line for the TA before the script exits.
+trap 'echo "STOP: a setup step failed (the AWS error is above). Send your account number ($ACCOUNT) and that error to your TA."' ERR
 
 # 1. Your bucket
 if aws s3api head-bucket --bucket "$BUCKET" >/dev/null 2>&1; then
