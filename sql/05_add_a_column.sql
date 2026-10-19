@@ -7,7 +7,7 @@ UPDATE tutorial.rides_march SET trip_flag = 'zero_miles' WHERE trip_miles = 0;
 SELECT trip_flag, count(*) FROM tutorial.rides_march GROUP BY trip_flag;
 -- zero_miles 3026 (2954 in March plus 72 on 1 April), the rest NULL
 
--- Paste the snapshot_id of the FIRST append (from step 3)
+-- Rerun Step 3's snapshots query and paste the oldest row's snapshot_id (the first append)
 SELECT trip_flag, count(*) FROM tutorial.rides_march
 FOR VERSION AS OF <snapshot_id of the first append>
 GROUP BY trip_flag;

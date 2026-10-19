@@ -22,7 +22,7 @@ and adds the course catalog as a data source named `course`.
 3. Paste this line and press Enter:
 
    ```
-   curl -sO https://raw.githubusercontent.com/cpsc436c-2026w1/b3-t1-athena-rides/main/setup_athena.sh && bash setup_athena.sh
+   curl -fsSO https://raw.githubusercontent.com/cpsc436c-2026w1/b3-t1-athena-rides/main/setup_athena.sh && bash setup_athena.sh
    ```
 
 You should see:
@@ -35,11 +35,11 @@ check  course data readable (265 taxi zones)
 Done. Your bucket for step 2 is: 436c-athena-<your account number>
 ```
 
-Write down the bucket name: step 2 needs it. Rerunning the script is safe.
+Write down the bucket name: Step 2 (copy one month) needs it. Rerunning the script is safe.
 [`setup_athena.sh`](setup_athena.sh) is in this repository if you want to read what it does first.
 
-If the script stops with `STOP: ...`, send your account number (printed on the first line) and the STOP line to the
-teaching team.
+If the script stops with `STOP: ...`, send your account number (printed on the first line) and the STOP line to your
+TA.
 
 **What the Data scanned limit does.** A query that would read more than 2 GB is cancelled instead of running on. A
 cancelled query is still charged for what it read before it stopped (2 GB is about one cent).
@@ -47,9 +47,12 @@ cancelled query is still charged for what it read before it stopped (2 GB is abo
 ## 2. Open the query editor
 
 1. In the AWS console, open **Athena**, then **Query editor**.
-2. In the **Data source** list on the left, choose `course` to browse the course tables. Choose `AwsDataCatalog` to
-   see your own databases (your copy appears there after step 2).
-3. Run one statement at a time: paste it, or select it in the editor, then press **Run**. Under the results, **Data
+2. Check that **Workgroup** (top right of the editor) is `primary`: the setup set the Data scanned limit and the
+   result location there.
+3. In the **Data source** list on the left, choose `course` to browse the course tables. **From Step 2 on, set Data
+   source back to `AwsDataCatalog`**: your own `tutorial` database lives there, and the SQL files name it without a
+   catalog. Course tables are always named in full (`course.course_rides.rides`), so they work with either setting.
+4. Run one statement at a time: paste it, or select it in the editor, then press **Run**. Under the results, **Data
    scanned** shows what Athena reads, and bills.
 
 The course catalog belongs to the course account `940482406111`. Every account in the course can read it; nobody can
@@ -58,7 +61,7 @@ change it from a student account. The tables used here are in the database `cour
 | Table | What is in it |
 |---|---|
 | `rides` | New York for-hire rides, January 2023 to December 2025: an Iceberg table partitioned by month of `pickup_datetime`, 20.6 GB |
-| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them |
+| `rides_flat` | The same rides as the original 36 monthly Parquet files, with no table format over them. Not used here; a query on it opens every file |
 | `zones` | The 265 taxi zones |
 
 ## 3. The steps
@@ -72,7 +75,8 @@ and compare with the result written under it in the file.
 
 Always filter `rides` on `pickup_datetime`. The table has an Iceberg partition per month of pickup, and each data
 file's month is kept in the table's manifests, so a filter on `pickup_datetime` lets Athena open only that month's
-files.
+files. (Manifests are Iceberg's metadata files that list the table's data files with each file's month and column
+statistics, L10.)
 
 An Iceberg table also shows its metadata as read-only tables named `"<table>$<what>"`, in double quotes: `$partitions`
 sums the files per partition, `$files` has one row per data file, `$snapshots` one row per snapshot. They are
@@ -80,7 +84,7 @@ called metadata tables.
 
 1. Look up how big March 2024 is in `"rides$partitions"`. A month shows as the number of months since January 1970,
    counted from 0: March 2024 is (2024 − 1970) × 12 + 3 − 1 = 650.
-2. Write down how much data you expect the March query to read. Then run it and compare with **Data scanned**.
+2. Guess how much data the March query will read and write it down. Then run it and compare with **Data scanned**.
 3. Run the two queries over all 36 months: the first runs, the second is cancelled by your Data scanned limit.
 4. Your turn: another month with a third column. Predict the data read before you run it.
 
@@ -99,7 +103,8 @@ the columns decide how much of each file is read.
 `CREATE TABLE ... AS SELECT` (CTAS) writes a query's result as a new table, here an Iceberg table in your own catalog
 and bucket. Replace `<your-bucket>` with the bucket name from setup. Your copy is yours to change.
 
-You should see 21,280,788 rows in 12 data files.
+You should see 21,280,788 rows in 12 data files. The course table keeps March in one file; Athena writes the copy
+with several writers in parallel, each writing its own files.
 
 ### Step 3: change your copy, then look back (about 10 minutes)
 
@@ -132,7 +137,7 @@ the rows whose key matches and inserts the rest); or it remembers which input it
 [`sql/05_add_a_column.sql`](sql/05_add_a_column.sql)
 
 Tables gain columns over time. Add a flag column to your copy and fill it for trips with zero miles (3,026). Then read
-an old snapshot with the new column: it fails with `COLUMN_NOT_FOUND`, because an old snapshot is read with the
+an old snapshot with the new column (rerun Step 3's snapshots query and take the oldest row's `snapshot_id`): it fails with `COLUMN_NOT_FOUND`, because an old snapshot is read with the
 columns the table had then.
 
 A `SELECT *` load from the course table now fails with `TYPE_MISMATCH`, because your copy has one column more. A
@@ -155,7 +160,7 @@ table by time travel to the snapshot before it.
 
 ## 4. Extra exercises
 
-[`sql/07_extra_exercises.sql`](sql/07_extra_exercises.sql)
+[`sql/07_extra_exercises.sql`](sql/07_extra_exercises.sql). Do them after Step 6: they use the column added in Step 5.
 
 **Delete the zero-mile trips and look back.** Count them (3,026), delete them, count again (0), then count them
 `FOR VERSION AS OF` the snapshot just before the delete (3,026 again).
@@ -189,6 +194,7 @@ bucket.
 | What you see | Why | What to do |
 |---|---|---|
 | Asked for a query result location, or "No output location provided" | Setup did not run, or ran in another Region | Rerun `setup_athena.sh` in Canada (Central) |
+| `SCHEMA_NOT_FOUND` for `tutorial` (Step 2 onwards) | The **Data source** list is on `course` | Choose `AwsDataCatalog` |
 | `TABLE_NOT_FOUND` or `SCHEMA_NOT_FOUND` on a course table | Region is not Canada (Central), or the `course` data source is missing | Switch the Region; rerun the setup script |
 | Your `tutorial` database is not in the list | The **Data source** list is on `course` | Choose `AwsDataCatalog` |
 | "Bytes scanned limit was exceeded" | The query reads more than 2 GB, usually `rides` without a `pickup_datetime` filter | Add a month filter |
